@@ -50,6 +50,8 @@ class TestCase extends OrchestraTestCase
             ]) : [],
         ]);
 
+        $this->app['config']->set('database.connections.pgsql.prefix', $prefix);
+
         $this->artisan('migrate:fresh');
 
         include_once __DIR__ . '/create_tables.php';

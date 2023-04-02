@@ -31,6 +31,18 @@ jobs:
         ports:
           - 3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: protone_media_db_test
+        ports:
+          - 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -46,7 +58,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, mysql, mysqli, pdo_mysql
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, mysql, mysqli, pdo_mysql, pdo_pgsql
           coverage: none
 
       - name: Install dependencies
@@ -54,10 +66,19 @@ jobs:
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
-      - name: Execute tests
+      - name: Execute tests (MySQL)
         run: vendor/bin/phpunit
         env:
           DB_DATABASE: protone_media_db_test
           DB_USERNAME: protone_media_db_test
           DB_PASSWORD: secret
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
+
+      - name: Execute tests (Postgres)
+        run: vendor/bin/phpunit
+        env:
+          DB_CONNECTION: pgsql
+          DB_DATABASE: protone_media_db_test
+          DB_USERNAME: protone_media_db_test
+          DB_PASSWORD: secret
+          DB_PORT: ${{ job.services.postgres.ports[5432] }}
