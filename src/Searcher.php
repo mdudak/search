@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Expression;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -323,29 +322,6 @@ class Searcher
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 
-    protected function initializeTerms(string $terms): self
-    {
-        $this->rawTerms = $terms;
-
-        $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
-
-        $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
-            return $this->ignoreCase ? Str::lower($term) : $term;
-        });
-
-        $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
-            return $terms->map(function ($term) {
-                return implode('', [
-                    $this->beginWithWildcard ? '%' : '',
-                    $term,
-                    $this->endWithWildcard ? '%' : '',
-                ]);
-            });
-        });
-
-        return $this;
-    }
-
     public function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
@@ -375,6 +351,57 @@ class Searcher
                 $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
             ]);
         })->all();
+    }
+
+    public function addRelevanceQueryToBuilder($builder, ModelToSearchThrough $modelToSearchThrough): void
+    {
+        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
+            return;
+        }
+
+        if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
+            throw OrderByRelevanceException::new();
+        }
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $builder) {
+            $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
+            $field = $builder->getQuery()->getGrammar()->wrap($prefix . $field);
+
+            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+                return [
+                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                ];
+            });
+        });
+
+        $selects = $expressionsAndBindings->map->expression->implode(' + ');
+        $bindings = $expressionsAndBindings->flatMap->bindings->all();
+
+        $builder->selectRaw("{$selects} as terms_count", $bindings);
+    }
+
+    protected function initializeTerms(string $terms): self
+    {
+        $this->rawTerms = $terms;
+
+        $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
+
+        $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
+            return $this->ignoreCase ? Str::lower($term) : $term;
+        });
+
+        $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
+            return $terms->map(function ($term) {
+                return implode('', [
+                    $this->beginWithWildcard ? '%' : '',
+                    $term,
+                    $this->endWithWildcard ? '%' : '',
+                ]);
+            });
+        });
+
+        return $this;
     }
 
     /**
@@ -515,34 +542,6 @@ class Searcher
                 ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
                 : $query->orWhere($column, $this->whereOperator, $term);
         });
-    }
-
-    public function addRelevanceQueryToBuilder($builder, ModelToSearchThrough $modelToSearchThrough): void
-    {
-        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
-            return;
-        }
-
-        if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
-            throw OrderByRelevanceException::new();
-        }
-
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $builder) {
-            $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
-            $field = $builder->getQuery()->getGrammar()->wrap($prefix . $field);
-
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
-                return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
-                ];
-            });
-        });
-
-        $selects = $expressionsAndBindings->map->expression->implode(' + ');
-        $bindings = $expressionsAndBindings->flatMap->bindings->all();
-
-        $builder->selectRaw("{$selects} as terms_count", $bindings);
     }
 
     private function isOrderingByRelevance(): bool
