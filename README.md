@@ -87,8 +87,6 @@ Search::add(Post::class, 'title')
     ->search('os');
 ```
 
-*Note: in previous versions of this package, this method was called `startWithWildcard()`.*
-
 If you want to disable the behaviour where a wildcard is appended to the terms, you should call the `endWithWildcard` method with `false`:
 
 ```php
