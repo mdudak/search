@@ -53,10 +53,8 @@ class TestCase extends OrchestraTestCase
 
         $this->app['config']->set('database.connections.pgsql.prefix', $prefix);
 
-        $this->artisan('migrate:fresh');
-
-        include_once __DIR__ . '/create_tables.php';
-
-        (new \CreateTables())->up();
+        $this->artisan('db:wipe');
+        $this->loadMigrationsFrom(__DIR__ . '/migrations');
+        $this->artisan('migrate', ['--force' => true]);
     }
 }
