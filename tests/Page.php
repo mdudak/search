@@ -1,6 +1,6 @@
 <?php
 
-namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
+namespace Konekt\Search\Tests;
 
 use Illuminate\Database\Eloquent\Model;
 

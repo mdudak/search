@@ -1,14 +1,14 @@
 <?php
 
-namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
+namespace Konekt\Search\Tests;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
-use ProtoneMedia\LaravelCrossEloquentSearch\Search;
-use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
+use Konekt\Search\Facades\Search;
+use Konekt\Search\Exceptions\OrderByRelevanceException;
+use Konekt\Search\Searcher;
 
 class SearchTest extends TestCase
 {

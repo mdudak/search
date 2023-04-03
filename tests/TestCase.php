@@ -1,18 +1,18 @@
 <?php
 
-namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
+namespace Konekt\Search\Tests;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Konekt\Search\Providers\SearchServiceProvider;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use PDO;
-use ProtoneMedia\LaravelCrossEloquentSearch\ServiceProvider;
 
 class TestCase extends OrchestraTestCase
 {
     protected function getPackageProviders($app)
     {
-        return [ServiceProvider::class];
+        return [SearchServiceProvider::class];
     }
 
     public function setUp(): void

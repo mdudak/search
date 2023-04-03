@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) Protone Media B.V.
+Copyright (c) 2020-2023 Protone Media B.V.
+Copyright (c) 2023 Attila Fulop
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

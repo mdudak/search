@@ -1,6 +1,8 @@
-<?php declare(strict_types=1);
+<?php
 
-namespace ProtoneMedia\LaravelCrossEloquentSearch;
+declare(strict_types=1);
+
+namespace Konekt\Search;
 
 use Illuminate\Support\Traits\ForwardsCalls;
 
