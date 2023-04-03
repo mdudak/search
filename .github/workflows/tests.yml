@@ -17,8 +17,8 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: no
-          MYSQL_USER: protone_media_db_test
-          MYSQL_DATABASE: protone_media_db_test
+          MYSQL_USER: search_test
+          MYSQL_DATABASE: search_test
           MYSQL_PASSWORD: secret
           MYSQL_ROOT_PASSWORD: secret
         ports:
@@ -28,7 +28,7 @@ jobs:
         image: postgres
         env:
           POSTGRES_PASSWORD: secret
-          POSTGRES_DB: protone_media_db_test
+          POSTGRES_DB: search_test
         ports:
           - 5432
         options: >-
@@ -66,15 +66,15 @@ jobs:
       - name: Tests - MySQL
         run: vendor/bin/phpunit --testdox
         env:
-          DB_DATABASE: protone_media_db_test
-          DB_USERNAME: protone_media_db_test
+          DB_DATABASE: search_test
+          DB_USERNAME: search_test
           DB_PASSWORD: secret
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
       - name: Tests - Postgres
         run: vendor/bin/phpunit --testdox
         env:
           DB_CONNECTION: pgsql
-          DB_DATABASE: protone_media_db_test
-          DB_USERNAME: protone_media_db_test
+          DB_DATABASE: search_test
+          DB_USERNAME: postgres
           DB_PASSWORD: secret
           DB_PORT: ${{ job.services.postgres.ports[5432] }}
