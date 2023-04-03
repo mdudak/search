@@ -18,7 +18,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
+use Konekt\Search\Contracts\SearchDialect;
+use Konekt\Search\Dialects\MySQLDialect;
+use Konekt\Search\Dialects\PostgresDialect;
 use Konekt\Search\Exceptions\OrderByRelevanceException;
+use Konekt\Search\Exceptions\UnsupportedDatabaseEngineException;
 
 class Searcher
 {
@@ -58,10 +62,12 @@ class Searcher
 
     protected ?string $includeModelTypeWithKey = null;
 
+    private SearchDialect $dialect;
+
     public function __construct()
     {
         $this->modelsToSearchThrough = new Collection();
-
+        $this->dialect = $this->obtainDialect();
         $this->orderByAsc();
     }
 
@@ -340,7 +346,7 @@ class Searcher
         return $this;
     }
 
-    protected function makeSelects(ModelToSearchThrough $currentModel): array
+    public function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
             $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
@@ -393,16 +399,7 @@ class Searcher
 
     protected function buildQueries(): Collection
     {
-        return $this->modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
-            return $modelToSearchThrough->getFreshBuilder()
-                ->select(
-                    array_merge([new Expression('CAST(NULL AS bigint)')], $this->makeSelects($modelToSearchThrough))
-                )
-                ->tap(function ($builder) use ($modelToSearchThrough) {
-                    $this->addSearchQueryToBuilder($builder, $modelToSearchThrough);
-                    $this->addRelevanceQueryToBuilder($builder, $modelToSearchThrough);
-                });
-        });
+        return $this->dialect->buildQueries($this->modelsToSearchThrough);
     }
 
     /**
@@ -520,7 +517,7 @@ class Searcher
         });
     }
 
-    private function addRelevanceQueryToBuilder($builder, ModelToSearchThrough $modelToSearchThrough): void
+    public function addRelevanceQueryToBuilder($builder, ModelToSearchThrough $modelToSearchThrough): void
     {
         if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
             return;
@@ -551,5 +548,14 @@ class Searcher
     private function isOrderingByRelevance(): bool
     {
         return 'relevance' === $this->orderByDirection;
+    }
+
+    private function obtainDialect(): SearchDialect
+    {
+        return match (DB::connection()->getDriverName()) {
+            'mysql' => new MySQLDialect($this),
+            'pgsql' => new PostgresDialect($this),
+            default => throw new UnsupportedDatabaseEngineException(DB::connection()->getDriverName()),
+        };
     }
 }
