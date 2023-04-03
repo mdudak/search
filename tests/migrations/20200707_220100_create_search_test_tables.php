@@ -33,6 +33,14 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
+        Schema::create('video_json', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->json('title');
+            $table->string('subtitle')->nullable();
+            $table->date('published_at')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('blogs', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('title');
@@ -69,6 +77,7 @@ return new class () extends Migration {
         Schema::dropIfExists('posts');
         Schema::dropIfExists('comments');
         Schema::dropIfExists('videos');
+        Schema::dropIfExists('video_json');
         Schema::dropIfExists('blogs');
         Schema::dropIfExists('pages');
     }

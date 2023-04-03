@@ -42,6 +42,8 @@ You can install the package via composer:
 composer require konekt/multi-model-search
 ```
 
+- If you want to use the `soundsLike()` similarity search with PostgreSQL, then you need to run `CREATE EXTENSION pg_trgm;` once on the given database to enable the [Trigram Extension](https://www.postgresql.org/docs/current/pgtrgm.html). 
+
 ## Usage
 
 Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `search` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.

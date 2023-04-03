@@ -37,8 +37,6 @@ class Searcher
 
     protected bool $endWithWildcard = true;
 
-    protected string $whereOperator = 'like';
-
     protected bool $soundsLike = false;
 
     protected bool $ignoreCase = false;
@@ -68,6 +66,16 @@ class Searcher
         $this->modelsToSearchThrough = new Collection();
         $this->dialect = $this->obtainDialect();
         $this->orderByAsc();
+    }
+
+    public function isCaseInsensitive(): bool
+    {
+        return $this->ignoreCase;
+    }
+
+    public function getSearchTerms(): Collection
+    {
+        return $this->terms;
     }
 
     public function orderByAsc(): self
@@ -196,9 +204,8 @@ class Searcher
 
     public function soundsLike(bool $state = true): self
     {
+        $state ? $this->dialect->useSoundex() : $this->dialect->avoidSoundex();
         $this->soundsLike = $state;
-
-        $this->whereOperator = $state ? 'sounds like' : 'like';
 
         return $this;
     }
@@ -535,13 +542,7 @@ class Searcher
 
     private function addWhereTermsToQuery(Builder $query, array|string $column): void
     {
-        $column = $this->ignoreCase ? $query->getGrammar()->wrap($column) : $column;
-
-        $this->terms->each(function ($term) use ($query, $column) {
-            $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
-                : $query->orWhere($column, $this->whereOperator, $term);
-        });
+        $this->dialect->addWhereTermsToQuery($query, $column);
     }
 
     private function isOrderingByRelevance(): bool

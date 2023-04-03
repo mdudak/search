@@ -11,6 +11,12 @@ use Illuminate\Support\Collection;
 use Konekt\Search\Exceptions\OrderByRelevanceException;
 use Konekt\Search\Facades\Search;
 use Konekt\Search\Searcher;
+use Konekt\Search\Tests\Examples\Blog;
+use Konekt\Search\Tests\Examples\Comment;
+use Konekt\Search\Tests\Examples\Page;
+use Konekt\Search\Tests\Examples\Post;
+use Konekt\Search\Tests\Examples\Video;
+use Konekt\Search\Tests\Examples\VideoJson;
 
 class SearchTest extends TestCase
 {
@@ -129,6 +135,24 @@ class SearchTest extends TestCase
 
     /** @test */
     public function it_has_an_option_to_ignore_the_case()
+    {
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar bar']);
+
+        Video::create(['title' => 'bar foo']);
+        Video::create(['title' => 'bar']);
+
+        $results = Search::add(Post::class, 'title')
+            ->add(Video::class, 'title')
+            ->beginWithWildcard()
+            ->ignoreCase()
+            ->search('FOO');
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
+    public function it_can_search_in_a_json_field()
     {
         Post::create(['title' => 'foo']);
         Post::create(['title' => 'bar bar']);
@@ -607,14 +631,15 @@ class SearchTest extends TestCase
     /** @test */
     public function it_includes_a_custom_model_identifier_to_search_results()
     {
-        Post::create(['title' => 'bar']);
-        Video::create(['title' => 'baz']);
+        Post::create(['title' => 'Terence Hill']);
+        VideoJson::create(['title' => 'baz', 'subtitle' => 'Terence Hill']);
 
         $search = Search::new()
-            ->add(VideoJson::class, 'title', 'title')
+            ->add(VideoJson::class, 'subtitle')
             ->includeModelType()
             ->paginate()
-            ->search('ba');
+            ->endWithWildcard()
+            ->search('Terence');
 
         $this->assertEquals($search->toArray()['data'][0]['type'], 'awesome_video');
     }

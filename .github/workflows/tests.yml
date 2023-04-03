@@ -61,8 +61,11 @@ jobs:
           is_smaller_version "${{ matrix.laravel }}" "9.5" && composer req "orchestra/testbench-core:7.1.0" --no-update || true
       - name: Composer Install
         run: composer install --prefer-dist --no-progress --no-interaction
-      - name: Create Database
+      - name: Create SQLite Database
         run: mkdir -p database && touch database/database.sqlite
+      - name: Enable Postgres Trigram Extension
+        run: |
+          PGPASSWORD=secret psql -U postgres -tc "CREATE EXTENSION pg_trgm;"
       - name: Tests - MySQL
         run: vendor/bin/phpunit --testdox
         env:
