@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -483,7 +483,7 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
+        $column = $this->ignoreCase ? $query->getGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
             $this->ignoreCase
@@ -509,9 +509,9 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $builder) {
             $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
-            $field = (new MySqlGrammar)->wrap($prefix . $field);
+            $field = $builder->getQuery()->getGrammar()->wrap($prefix . $field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
@@ -600,7 +600,9 @@ class Searcher
     {
         return $this->modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
             return $modelToSearchThrough->getFreshBuilder()
-                ->select($this->makeSelects($modelToSearchThrough))
+                ->select(
+                    array_merge([new Expression('CAST(NULL AS bigint)')], $this->makeSelects($modelToSearchThrough))
+                )
                 ->tap(function ($builder) use ($modelToSearchThrough) {
                     $this->addSearchQueryToBuilder($builder, $modelToSearchThrough);
                     $this->addRelevanceQueryToBuilder($builder, $modelToSearchThrough);
@@ -642,6 +644,8 @@ class Searcher
                 $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
             );
         }
+
+        $firstQuery = DB::table($firstQuery, 't1');
 
         if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
             return $firstQuery->orderBy('terms_count', 'desc');

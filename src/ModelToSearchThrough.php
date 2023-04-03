@@ -139,7 +139,7 @@ class ModelToSearchThrough
     public function getModelKey($suffix = 'key'): string
     {
         return implode('_', [
-            $this->key,
+            'q' . $this->key,
             Str::snake(class_basename($this->getModel())),
             $suffix,
         ]);
