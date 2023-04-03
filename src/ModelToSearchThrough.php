@@ -57,12 +57,12 @@ class ModelToSearchThrough
      */
     public function __construct(Builder $builder, Collection $columns, string $orderByColumn, int $key, bool $fullText = false, array $fullTextOptions = [], string $fullTextRelation = null)
     {
-        $this->builder          = $builder;
-        $this->columns          = $columns;
-        $this->orderByColumn    = $orderByColumn;
-        $this->key              = $key;
-        $this->fullText         = $fullText;
-        $this->fullTextOptions  = $fullTextOptions;
+        $this->builder = $builder;
+        $this->columns = $columns;
+        $this->orderByColumn = $orderByColumn;
+        $this->key = $key;
+        $this->fullText = $fullText;
+        $this->fullTextOptions = $fullTextOptions;
         $this->fullTextRelation = $fullTextRelation;
     }
 

@@ -33,6 +33,7 @@ class Searcher
     protected bool $beginWithWildcard = false;
 
     protected bool $endWithWildcard = true;
+
     protected string $whereOperator = 'like';
 
     protected bool $soundsLike = false;
@@ -59,7 +60,7 @@ class Searcher
 
     public function __construct()
     {
-        $this->modelsToSearchThrough = new Collection;
+        $this->modelsToSearchThrough = new Collection();
 
         $this->orderByAsc();
     }
@@ -132,7 +133,7 @@ class Searcher
         return $this;
     }
 
-    public function addFullText(Builder|string$query, string|array|Collection $columns = null, array $options = [], string $orderByColumn = null): self
+    public function addFullText(Builder|string $query, string|array|Collection $columns = null, array $options = [], string $orderByColumn = null): self
     {
         // @todo add class_exists verification if $query is a string
         $builder = is_string($query) ? $query::query() : $query;
@@ -199,9 +200,9 @@ class Searcher
 
     public function paginate(int $perPage = 15, string $pageName = 'page', ?int $page = null): self
     {
-        $this->page           = $page ?: Paginator::resolveCurrentPage($pageName);
-        $this->pageName       = $pageName;
-        $this->perPage        = $perPage;
+        $this->page = $page ?: Paginator::resolveCurrentPage($pageName);
+        $this->pageName = $pageName;
+        $this->perPage = $perPage;
         $this->simplePaginate = false;
 
         return $this;
@@ -222,32 +223,9 @@ class Searcher
         return Collection::make(str_getcsv($terms, ' ', '"'))
             ->filter()
             ->values()
-            ->when($callback !== null, function ($terms) use ($callback) {
+            ->when(null !== $callback, function ($terms) use ($callback) {
                 return $terms->each(fn ($value, $key) => $callback($value, $key));
             });
-    }
-
-    protected function initializeTerms(string $terms): self
-    {
-        $this->rawTerms = $terms;
-
-        $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
-
-        $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
-            return $this->ignoreCase ? Str::lower($term) : $term;
-        });
-
-        $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
-            return $terms->map(function ($term) {
-                return implode([
-                    $this->beginWithWildcard ? '%' : '',
-                    $term,
-                    $this->endWithWildcard ? '%' : '',
-                ]);
-            });
-        });
-
-        return $this;
     }
 
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
@@ -289,58 +267,77 @@ class Searcher
         });
     }
 
-    private function addNestedRelationToQuery(Builder $query, string $nestedRelationAndColumn): void
+    public function count(string $terms = null): int
     {
-        $segments = explode('.', $nestedRelationAndColumn);
+        $this->initializeTerms($terms ?: '');
 
-        $column = array_pop($segments);
-
-        $relation = implode('.', $segments);
-
-        $query->orWhereHas($relation, function ($relationQuery) use ($column) {
-            $relationQuery->where(
-                fn ($query) => $this->addWhereTermsToQuery($query, $query->qualifyColumn($column))
-            );
-        });
+        return $this->getCompiledQueryBuilder()->count();
     }
 
-    private function addWhereTermsToQuery(Builder $query, array|string $column): void
+    /**
+     * Initialize the search terms, execute the search query and retrieve all
+     * models per type. Map the results to a Eloquent collection and set
+     * the collection on the paginator (whenever used).
+     */
+    public function search(string $terms = null): Collection|LengthAwarePaginator|PaginatorContract
     {
-        $column = $this->ignoreCase ? $query->getGrammar()->wrap($column) : $column;
+        $this->initializeTerms($terms ?: '');
 
-        $this->terms->each(function ($term) use ($query, $column) {
-            $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
-                : $query->orWhere($column, $this->whereOperator, $term);
-        });
+        $results = $this->getIdAndOrderAttributes();
+
+        $modelsPerType = $this->getModelsPerType($results);
+
+        // loop over the results again and replace the object with the related model
+        return $results->map(function ($item) use ($modelsPerType) {
+            // from this set, pick '0_post_key'
+            //
+            // [
+            //     "0_post_key": 1
+            //     "0_post_order": "2020-07-08 19:51:08"
+            //     "1_video_key": null
+            //     "1_video_order": null
+            // ]
+
+            $modelKey = Collection::make($item)->search(function ($value, $key) {
+                return $value && Str::endsWith($key, '_key');
+            });
+
+            /** @var Model $model */
+            $model = $modelsPerType->get($modelKey)->get($item->$modelKey);
+
+            if ($this->includeModelTypeWithKey) {
+                $searchType = method_exists($model, 'searchType') ? $model->searchType() : class_basename($model);
+
+                $model->setAttribute($this->includeModelTypeWithKey, $searchType);
+            }
+
+            return $model;
+        })
+            ->pipe(fn (Collection $models) => new EloquentCollection($models))
+            ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 
-    private function addRelevanceQueryToBuilder($builder, ModelToSearchThrough $modelToSearchThrough): void
+    protected function initializeTerms(string $terms): self
     {
-        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
-            return;
-        }
+        $this->rawTerms = $terms;
 
-        if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
-            throw OrderByRelevanceException::new();
-        }
+        $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $builder) {
-            $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
-            $field = $builder->getQuery()->getGrammar()->wrap($prefix . $field);
+        $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
+            return $this->ignoreCase ? Str::lower($term) : $term;
+        });
 
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
-                return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
-                ];
+        $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
+            return $terms->map(function ($term) {
+                return implode('', [
+                    $this->beginWithWildcard ? '%' : '',
+                    $term,
+                    $this->endWithWildcard ? '%' : '',
+                ]);
             });
         });
 
-        $selects  = $expressionsAndBindings->map->expression->implode(' + ');
-        $bindings = $expressionsAndBindings->flatMap->bindings->all();
-
-        $builder->selectRaw("{$selects} as terms_count", $bindings);
+        return $this;
     }
 
     protected function makeSelects(ModelToSearchThrough $currentModel): array
@@ -360,7 +357,7 @@ class Searcher
                         $this->orderByModel ?: []
                     );
 
-                    if ($modelOrderKey === false) {
+                    if (false === $modelOrderKey) {
                         $modelOrderKey = count($this->orderByModel);
                     }
                 }
@@ -406,11 +403,6 @@ class Searcher
                     $this->addRelevanceQueryToBuilder($builder, $modelToSearchThrough);
                 });
         });
-    }
-
-    private function isOrderingByRelevance(): bool
-    {
-        return $this->orderByDirection === 'relevance';
     }
 
     /**
@@ -502,53 +494,62 @@ class Searcher
         // ]
     }
 
-    public function count(string $terms = null): int
+    private function addNestedRelationToQuery(Builder $query, string $nestedRelationAndColumn): void
     {
-        $this->initializeTerms($terms ?: '');
+        $segments = explode('.', $nestedRelationAndColumn);
 
-        return $this->getCompiledQueryBuilder()->count();
+        $column = array_pop($segments);
+
+        $relation = implode('.', $segments);
+
+        $query->orWhereHas($relation, function ($relationQuery) use ($column) {
+            $relationQuery->where(
+                fn ($query) => $this->addWhereTermsToQuery($query, $query->qualifyColumn($column))
+            );
+        });
     }
 
-    /**
-     * Initialize the search terms, execute the search query and retrieve all
-     * models per type. Map the results to a Eloquent collection and set
-     * the collection on the paginator (whenever used).
-     */
-    public function search(string $terms = null): Collection|LengthAwarePaginator|PaginatorContract
+    private function addWhereTermsToQuery(Builder $query, array|string $column): void
     {
-        $this->initializeTerms($terms ?: '');
+        $column = $this->ignoreCase ? $query->getGrammar()->wrap($column) : $column;
 
-        $results = $this->getIdAndOrderAttributes();
+        $this->terms->each(function ($term) use ($query, $column) {
+            $this->ignoreCase
+                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
+                : $query->orWhere($column, $this->whereOperator, $term);
+        });
+    }
 
-        $modelsPerType = $this->getModelsPerType($results);
+    private function addRelevanceQueryToBuilder($builder, ModelToSearchThrough $modelToSearchThrough): void
+    {
+        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
+            return;
+        }
 
-        // loop over the results again and replace the object with the related model
-        return $results->map(function ($item) use ($modelsPerType) {
-            // from this set, pick '0_post_key'
-            //
-            // [
-            //     "0_post_key": 1
-            //     "0_post_order": "2020-07-08 19:51:08"
-            //     "1_video_key": null
-            //     "1_video_order": null
-            // ]
+        if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
+            throw OrderByRelevanceException::new();
+        }
 
-            $modelKey = Collection::make($item)->search(function ($value, $key) {
-                return $value && Str::endsWith($key, '_key');
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $builder) {
+            $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
+            $field = $builder->getQuery()->getGrammar()->wrap($prefix . $field);
+
+            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+                return [
+                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                ];
             });
+        });
 
-            /** @var Model $model */
-            $model = $modelsPerType->get($modelKey)->get($item->$modelKey);
+        $selects = $expressionsAndBindings->map->expression->implode(' + ');
+        $bindings = $expressionsAndBindings->flatMap->bindings->all();
 
-            if ($this->includeModelTypeWithKey) {
-                $searchType = method_exists($model, 'searchType') ? $model->searchType() : class_basename($model);
+        $builder->selectRaw("{$selects} as terms_count", $bindings);
+    }
 
-                $model->setAttribute($this->includeModelTypeWithKey, $searchType);
-            }
-
-            return $model;
-        })
-            ->pipe(fn (Collection $models) => new EloquentCollection($models))
-            ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    private function isOrderingByRelevance(): bool
+    {
+        return 'relevance' === $this->orderByDirection;
     }
 }
