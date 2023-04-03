@@ -65,7 +65,7 @@ jobs:
         run: mkdir -p database && touch database/database.sqlite
       - name: Enable Postgres Trigram Extension
         run: |
-          PGPASSWORD=secret psql -U postgres -tc "CREATE EXTENSION pg_trgm;"
+          PGPASSWORD=secret psql -U postgres -h 127.0.0.1 -p ${{ job.services.postgres.ports[5432] }} -tc "CREATE EXTENSION pg_trgm;"
       - name: Tests - MySQL
         run: vendor/bin/phpunit --testdox
         env:
