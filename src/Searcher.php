@@ -385,7 +385,7 @@ class Searcher
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
-                    'expression' => sprintf('COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)', $this->dialect->charLengthFunction(), $field ),
+                    'expression' => sprintf('COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)', $this->dialect->charLengthFunction(), $field),
                     'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
