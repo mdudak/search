@@ -1,9 +1,9 @@
 # Konekt Search Changelog
 
-## Unreleased
-#### 2023-XX-YY
+## 1.2.0
+#### 2023-04-04
 
-- Added PHP 8.0 support (it was 8.1+ before)
+- Added PHP 8.0 support (it was restricted to 8.1+ before)
 
 ## 1.1.0
 #### 2023-04-04
