@@ -81,3 +81,7 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: secret
           DB_PORT: ${{ job.services.postgres.ports[5432] }}
+      - name: Tests - SQLite
+        run: vendor/bin/phpunit --testdox
+        env:
+          DB_CONNECTION: sqlite
