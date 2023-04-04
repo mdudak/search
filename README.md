@@ -16,7 +16,7 @@ and searching through single or multiple columns.
 
 ## Requirements
 
-- PHP 8.1+
+- PHP 8.0+
 - MySQL 8.0 (all features)
 - PostgreSQL 11+ (partial feature set)
 - SQLite (partial feature set)
