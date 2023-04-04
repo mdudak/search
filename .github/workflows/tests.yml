@@ -62,7 +62,7 @@ jobs:
       - name: Composer Install
         run: composer install --prefer-dist --no-progress --no-interaction
       - name: Create SQLite Database
-        run: mkdir -p database && touch database/database.sqlite
+        run: touch search_test.sqlite
       - name: Enable Postgres Trigram Extension
         run: |
           PGPASSWORD=secret psql -U postgres -h 127.0.0.1 -p ${{ job.services.postgres.ports[5432] }} -d search_test -tc "CREATE EXTENSION pg_trgm;"
@@ -85,3 +85,4 @@ jobs:
         run: vendor/bin/phpunit --testdox
         env:
           DB_CONNECTION: sqlite
+          DB_DATABASE: search_test
