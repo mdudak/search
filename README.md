@@ -52,7 +52,7 @@ and searching through single or multiple columns.
 You can install the package via composer:
 
 ```bash
-composer require konekt/multi-model-search
+composer require konekt/search
 ```
 
 - If you want to use the `soundsLike()` similarity search with PostgreSQL, then you need to run `CREATE EXTENSION pg_trgm;` once on the given database to enable the [Trigram Extension](https://www.postgresql.org/docs/current/pgtrgm.html).
