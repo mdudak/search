@@ -29,6 +29,7 @@ and searching through single or multiple columns.
 | Multi-model search     | ✔       | ✔          | ✔       |
 | Multi-model pagination | ✔       | ✔          | ✔       |
 | Search in JSON fields  | ✔       | ✔          | ✔       |
+| Sounds like search     | ✔       | ✔          | ❌       |
 | Full Text Search       | ✔       | ❌          | ❌       |
 | Sort by Model Order    | ✔       | ❌          | ❌       |
 
