@@ -8,7 +8,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Konekt\Search\Exceptions\OrderByRelevanceException;
+use Konekt\Search\Exceptions\UnsupportedOperationException;
 use Konekt\Search\Facades\Search;
 use Konekt\Search\Searcher;
 use Konekt\Search\Tests\Examples\Blog;
@@ -249,6 +251,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
+        if ($this->isRunningAgainstSqlite()) {
+            $this->expectException(UnsupportedOperationException::class);
+        }
         Video::create(['title' => 'laravel']);
 
         $this->assertCount(0, Search::add(Video::class, 'title')->search('larafel'));
@@ -422,6 +427,10 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_sort_by_model_order()
     {
+        if ($this->isRunningAgainstSqlite() || $this->isRunningAgainstPostgres()) {
+            $this->expectException(UnsupportedOperationException::class);
+        }
+
         $post = Post::create(['title' => 'foo']);
         $comment = $post->comments()->create(['body' => 'foo']);
         $video = Video::create(['title' => 'foo']);
@@ -468,6 +477,10 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_the_regular_order_when_ordering_by_model_type()
     {
+        if ($this->isRunningAgainstSqlite() || $this->isRunningAgainstPostgres()) {
+            $this->expectException(UnsupportedOperationException::class);
+        }
+
         $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
         $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
@@ -488,6 +501,10 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_the_relevance_order_when_ordering_by_model_type()
     {
+        if ($this->isRunningAgainstSqlite() || $this->isRunningAgainstPostgres()) {
+            $this->expectException(UnsupportedOperationException::class);
+        }
+
         $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
         $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
 
@@ -647,6 +664,10 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search()
     {
+        if ($this->isRunningAgainstSqlite() || $this->isRunningAgainstPostgres()) {
+            $this->expectException(UnsupportedOperationException::class);
+        }
+
         $postA = Post::create(['title' => 'Laravel Framework']);
         $postB = Post::create(['title' => 'Tailwind Framework']);
 
@@ -674,6 +695,10 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search_on_relations()
     {
+        if ($this->isRunningAgainstSqlite() || $this->isRunningAgainstPostgres()) {
+            $this->expectException(UnsupportedOperationException::class);
+        }
+
         $videoA = Video::create(['title' => 'Page A']);
         $videoB = Video::create(['title' => 'Page B']);
         $videoC = Video::create(['title' => 'Page C']);
@@ -744,5 +769,15 @@ class SearchTest extends TestCase
 
         $this->assertTrue($results->first()->is($postA));
         $this->assertTrue($results->last()->is($postB));
+    }
+
+    private function isRunningAgainstSqlite(): bool
+    {
+        return 'sqlite' === DB::connection()->getDriverName();
+    }
+
+    private function isRunningAgainstPostgres(): bool
+    {
+        return 'pgsql' === DB::connection()->getDriverName();
     }
 }

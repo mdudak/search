@@ -47,9 +47,11 @@ return new class () extends Migration {
             $table->string('subtitle');
             $table->string('body');
 
-            $table->fullText('title');
-            $table->fullText(['title', 'subtitle']);
-            $table->fullText(['title', 'subtitle', 'body']);
+            if (!$this->isSqlite()) {
+                $table->fullText('title');
+                $table->fullText(['title', 'subtitle']);
+                $table->fullText(['title', 'subtitle', 'body']);
+            }
 
             $table->unsignedInteger('video_id')->nullable();
 
@@ -62,9 +64,11 @@ return new class () extends Migration {
             $table->string('subtitle')->nullable();
             $table->string('body')->nullable();
 
-            $table->fullText('title');
-            $table->fullText(['title', 'subtitle']);
-            $table->fullText(['title', 'subtitle', 'body']);
+            if (!$this->isSqlite()) {
+                $table->fullText('title');
+                $table->fullText(['title', 'subtitle']);
+                $table->fullText(['title', 'subtitle', 'body']);
+            }
 
             $table->unsignedInteger('video_id')->nullable();
 
@@ -80,5 +84,13 @@ return new class () extends Migration {
         Schema::dropIfExists('video_json');
         Schema::dropIfExists('blogs');
         Schema::dropIfExists('pages');
+    }
+
+    private function isSqlite(): bool
+    {
+        return 'sqlite' === Schema::connection($this->getConnection())
+                ->getConnection()
+                ->getPdo()
+                ->getAttribute(PDO::ATTR_DRIVER_NAME);
     }
 };

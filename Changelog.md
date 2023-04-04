@@ -1,5 +1,11 @@
 # Konekt Search Changelog
 
+## Unreleased
+#### 2023-04-XX
+
+- Added SQLite support
+- Added explicit exceptions when doing unsupported operations on Postgres/Sqlite
+
 ## 1.0.0
 #### 2023-04-03
 

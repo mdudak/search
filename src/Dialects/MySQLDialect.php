@@ -13,6 +13,11 @@ class MySQLDialect extends BaseDialect implements SearchDialect
 {
     protected string $whereOperator = 'like';
 
+    public function getName(): string
+    {
+        return 'MySQL';
+    }
+
     public function buildQueries(Collection $modelsToSearchThrough): Collection
     {
         return $modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
@@ -44,5 +49,25 @@ class MySQLDialect extends BaseDialect implements SearchDialect
     public function avoidSoundex(): void
     {
         $this->whereOperator = 'like';
+    }
+
+    public function makeCoalesce(Collection $keys): string
+    {
+        return 'COALESCE(' . $keys->implode(', ') . ')';
+    }
+
+    public function charLengthFunction(): string
+    {
+        return 'CHAR_LENGTH';
+    }
+
+    public function supportsFullTextSearch(): bool
+    {
+        return true;
+    }
+
+    public function supportsOrderByModel(): bool
+    {
+        return true;
     }
 }

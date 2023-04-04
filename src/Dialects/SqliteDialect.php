@@ -2,30 +2,38 @@
 
 declare(strict_types=1);
 
+/**
+ * Contains the SqliteDialect class.
+ *
+ * @copyright   Copyright (c) 2023 Vanilo UG
+ * @author      Attila Fulop
+ * @license     MIT
+ * @since       2023-04-04
+ *
+ */
+
 namespace Konekt\Search\Dialects;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Konekt\Search\Contracts\SearchDialect;
+use Konekt\Search\Exceptions\UnsupportedOperationException;
 use Konekt\Search\ModelToSearchThrough;
 
-class PostgresDialect extends BaseDialect implements SearchDialect
+class SqliteDialect extends BaseDialect implements SearchDialect
 {
-    protected bool $similarSearch = false;
+    protected string $whereOperator = 'like';
 
     public function getName(): string
     {
-        return 'Postgres';
+        return 'SQLite';
     }
 
     public function buildQueries(Collection $modelsToSearchThrough): Collection
     {
         return $modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
             return $modelToSearchThrough->getFreshBuilder()
-                ->select(
-                    array_merge([new Expression('CAST(NULL AS bigint)')], $this->searcher->makeSelects($modelToSearchThrough))
-                )
+                ->select($this->searcher->makeSelects($modelToSearchThrough))
                 ->tap(function ($builder) use ($modelToSearchThrough) {
                     $this->searcher->addSearchQueryToBuilder($builder, $modelToSearchThrough);
                     $this->searcher->addRelevanceQueryToBuilder($builder, $modelToSearchThrough);
@@ -38,37 +46,34 @@ class PostgresDialect extends BaseDialect implements SearchDialect
         $column = $this->searcher->isCaseInsensitive() ? $query->getGrammar()->wrap($column) : $column;
 
         $this->searcher->getSearchTerms()->each(function ($term) use ($query, $column) {
-            // SELECT * FROM mytable WHERE mycolumn LIKE '%hello%' AND similarity(mycolumn, 'hello') > 0.5;
-            if ($this->similarSearch) {
-                $this->searcher->isCaseInsensitive()
-                    ? $query->orWhereRaw("LOWER({$column}) LIKE ? OR similarity({$column}, ?) > 0.4", [$term, str_replace('%', '', $term)])
-                    : $query->orWhereRaw("{$column} LIKE ? OR similarity({$column}, ?) > 0.4", [$term, str_replace('%', '', $term)]);
-            } else {
-                $this->searcher->isCaseInsensitive()
-                    ? $query->orWhereRaw("LOWER({$column}) LIKE ?", [$term])
-                    : $query->orWhere($column, 'LIKE', $term);
-            }
+            $this->searcher->isCaseInsensitive()
+                ? $query->orWhereRaw("LOWER({$column}) LIKE ?", [$term])
+                : $query->orWhere($column, 'LIKE', $term);
         });
     }
 
     public function useSoundex(): void
     {
-        $this->similarSearch = true;
+        throw new UnsupportedOperationException('The SQLite driver does not support similarity matching');
     }
 
     public function avoidSoundex(): void
     {
-        $this->similarSearch = false;
     }
 
     public function makeCoalesce(Collection $keys): string
     {
-        return 'COALESCE(' . $keys->implode(', ') . ')';
+        $fields = $keys->implode(', ');
+        if ($keys->count() < 2) {
+            $fields .= ', NULL';
+        }
+
+        return "COALESCE({$fields})";
     }
 
     public function charLengthFunction(): string
     {
-        return 'CHAR_LENGTH';
+        return 'LENGTH';
     }
 
     public function supportsFullTextSearch(): bool

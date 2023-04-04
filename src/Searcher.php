@@ -20,8 +20,10 @@ use Illuminate\Support\Traits\Conditionable;
 use Konekt\Search\Contracts\SearchDialect;
 use Konekt\Search\Dialects\MySQLDialect;
 use Konekt\Search\Dialects\PostgresDialect;
+use Konekt\Search\Dialects\SqliteDialect;
 use Konekt\Search\Exceptions\OrderByRelevanceException;
 use Konekt\Search\Exceptions\UnsupportedDatabaseEngineException;
+use Konekt\Search\Exceptions\UnsupportedOperationException;
 
 class Searcher
 {
@@ -101,6 +103,10 @@ class Searcher
 
     public function orderByModel($modelClasses): self
     {
+        if (!$this->dialect->supportsOrderByModel()) {
+            throw new UnsupportedOperationException('Full text search is not supported on ' . $this->dialect->getName());
+        }
+
         $this->orderByModel = Arr::wrap($modelClasses);
 
         return $this;
@@ -148,6 +154,9 @@ class Searcher
 
     public function addFullText(Builder|string $query, string|array|Collection $columns = null, array $options = [], string $orderByColumn = null): self
     {
+        if (!$this->dialect->supportsFullTextSearch()) {
+            throw new UnsupportedOperationException('Full text search is not supported on ' . $this->dialect->getName());
+        }
         // @todo add class_exists verification if $query is a string
         $builder = is_string($query) ? $query::query() : $query;
 
@@ -376,7 +385,7 @@ class Searcher
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'expression' => sprintf('COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)', $this->dialect->charLengthFunction(), $field ),
                     'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
@@ -416,9 +425,9 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
-
-        return "COALESCE({$modelOrderKeys})";
+        return $this->dialect->makeCoalesce(
+            $this->modelsToSearchThrough->map->getModelKey('order')
+        );
     }
 
     /**
@@ -426,9 +435,9 @@ class Searcher
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
-
-        return "COALESCE({$modelOrderKeys})";
+        return $this->dialect->makeCoalesce(
+            $this->modelsToSearchThrough->map->getModelKey('model_order')
+        );
     }
 
     protected function buildQueries(): Collection
@@ -555,6 +564,7 @@ class Searcher
         return match (DB::connection()->getDriverName()) {
             'mysql' => new MySQLDialect($this),
             'pgsql' => new PostgresDialect($this),
+            'sqlite' => new SqliteDialect($this),
             default => throw new UnsupportedDatabaseEngineException(DB::connection()->getDriverName()),
         };
     }

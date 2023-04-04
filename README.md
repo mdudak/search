@@ -16,10 +16,22 @@ and searching through single or multiple columns.
 
 ## Requirements
 
-* PHP 8.1+
-* MySQL 8.0+
-* PostgreSQL 11+
-* Laravel 9.x, Laravel 10.x
+- PHP 8.1+
+- MySQL 8.0 (all features)
+- PostgreSQL 11+ (partial feature set)
+- SQLite (partial feature set)
+- Laravel 9.x, Laravel 10.x
+
+### Feature Matrix
+
+| Feature                | MySQL 8 | PostgreSQL | SQLite  |
+|------------------------|---------|------------|---------|
+| Multi-model search     | ✔       | ✔          | ✔       |
+| Multi-model pagination | ✔       | ✔          | ✔       |
+| Search in JSON fields  | ✔       | ✔          | ✔       |
+| Full Text Search       | ✔       | ❌          | ❌       |
+| Sort by Model Order    | ✔       | ❌          | ❌       |
+
 
 ## Features
 
