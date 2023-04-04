@@ -54,14 +54,7 @@ You can install the package via composer:
 composer require konekt/multi-model-search
 ```
 
-- If you want to use the `soundsLike()` similarity search with PostgreSQL, then you need to run `CREATE EXTENSION pg_trgm;` once on the given database to enable the [Trigram Extension](https://www.postgresql.org/docs/current/pgtrgm.html). 
-
-## Limitations
-
-MySQL is fully functional, but Postgres support is limited at the moment:
-
-- Full text search doesn't work
-- Ordering by model type doesn't work
+- If you want to use the `soundsLike()` similarity search with PostgreSQL, then you need to run `CREATE EXTENSION pg_trgm;` once on the given database to enable the [Trigram Extension](https://www.postgresql.org/docs/current/pgtrgm.html).
 
 ## Usage
 
