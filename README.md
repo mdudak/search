@@ -7,7 +7,7 @@
 [![MIT Software License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE.md)
 
 
-> This package is a fork of the wonderful [Laravel Cross Eloquent Search](https://github.com/protonemedia/laravel-splade) package.  
+> This package is a fork of the wonderful [Laravel Cross Eloquent Search](https://github.com/protonemedia/laravel-cross-eloquent-search) package.  
 > Consider [sponsoring the original author](https://github.com/sponsors/pascalbaljet) of this package.
 
 This Laravel package allows you to search through multiple Eloquent models.
