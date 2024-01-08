@@ -1,9 +1,9 @@
 # Konekt Search Changelog
 
-## Unreleased
-#### 2023-XX-YY
+## 1.3.0
+#### 2024-01-08
 
-- Added Laravel 11 support
+- Added Laravel 11 support (pre-release)
 - Added PHPUnit 10 support (internal)
 
 ## 1.2.1
