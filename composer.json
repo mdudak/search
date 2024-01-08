@@ -24,7 +24,7 @@
     "require": {
         "php": "^8.0",
         "ext-pdo": "*",
-        "laravel/framework": "^11.0|^11.0|^11.0",
+        "laravel/framework": "^9.0|^10.0|^11.0",
         "nesbot/carbon": "^2.66"
     },
     "require-dev": {
