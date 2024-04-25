@@ -1,5 +1,10 @@
 # Konekt Search Changelog
 
+## Unreleased
+#### 2024-XX-YY
+
+- Added Carbon v3 support
+
 ## 1.3.0
 #### 2024-01-08
 
