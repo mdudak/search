@@ -60,9 +60,9 @@ jobs:
           tools: composer:v2
       - name: Lock Package Versions
         run: |
-          composer require "illuminate/support:${{ matrix.laravel }}.*" --no-update -v && \
-          composer require "illuminate/console:${{ matrix.laravel }}.*" --no-update -v && \
-          composer require "nesbot/carbon:${{ matrix.carbon }}.*" --no-update -v && \
+          composer require "illuminate/support:${{ matrix.laravel }}.*" --no-update -v
+          composer require "illuminate/console:${{ matrix.laravel }}.*" --no-update -v
+          composer require "nesbot/carbon:${{ matrix.carbon }}.*" --no-update -v
       - name: Testbench Version Adjustments
         run: |
           is_smaller_version() [[ $(echo -e "$1\n$2"|sort -V|head -1) != $2 ]]
