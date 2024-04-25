@@ -1,7 +1,7 @@
 # Konekt Search Changelog
 
-## Unreleased
-#### 2024-XX-YY
+## 1.4.0
+#### 2024-04-25
 
 - Added Carbon v3 support
 
