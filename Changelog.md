@@ -1,5 +1,13 @@
 # Konekt Search Changelog
 
+## Unreleased
+#### 2025-XX-YY
+
+- Added Laravel 12 support
+- Added PHP 8.4 support
+- Dropped PHP 8.0 support
+- Dropped Laravel 9 support
+
 ## 1.4.0
 #### 2024-04-25
 
