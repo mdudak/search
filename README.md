@@ -3,7 +3,7 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/artkonekt/search/tests.yml?branch=master&style=flat-square)](https://github.com/artkonekt/search/actions?query=workflow%3Atests)
 [![Packagist version](https://img.shields.io/packagist/v/konekt/search.svg?style=flat-square)](https://packagist.org/packages/konekt/search)
 [![Packagist downloads](https://img.shields.io/packagist/dt/konekt/search.svg?style=flat-square)](https://packagist.org/packages/konekt/search)
-[![StyleCI](https://styleci.io/repos/622554980/shield?branch=master)](https://styleci.io/repos/622554980)
+[![StyleCI](https://styleci.io/repos/942087226/shield?branch=master)](https://styleci.io/repos/942087226)
 [![MIT Software License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE.md)
 
 
