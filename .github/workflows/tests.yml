@@ -23,7 +23,7 @@ jobs:
           - laravel: '10.48'
             carbon: '3.x'
           - laravel: '12.0'
-            carbon: '3.x'
+            carbon: '2.x'
     name: PHP ${{ matrix.php }} Laravel ${{ matrix.laravel }} Carbon ${{ matrix.carbon }}
 
     services:
