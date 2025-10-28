@@ -360,7 +360,7 @@ class Searcher
                     }
                 }
             } else {
-                $qualifiedKeyName  = 'CAST(NULL AS bigint)';
+                $qualifiedKeyName = 'CAST(NULL AS bigint)';
                 $qualifiedOrderByColumnName = 'CAST(null AS timestamp)';
             }
 
