@@ -239,13 +239,13 @@ class Searcher
 
     public function parseTerms(string $terms, callable $callback = null): Collection
     {
-        $callback = $callback ?: fn() => null;
+        $callback = $callback ?: fn () => null;
 
         return Collection::make(str_getcsv($terms, ' ', '"'))
             ->filter()
             ->values()
             ->when(null !== $callback, function ($terms) use ($callback) {
-                return $terms->each(fn($value, $key) => $callback($value, $key));
+                return $terms->each(fn ($value, $key) => $callback($value, $key));
             });
     }
 
@@ -279,7 +279,7 @@ class Searcher
                         });
                     } else {
                         $query->orWhereFullText(
-                            $modelToSearchThrough->getColumns()->map(fn($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
+                            $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
                             $this->rawTerms,
                             $modelToSearchThrough->getFullTextOptions()
                         );
@@ -334,8 +334,8 @@ class Searcher
 
             return $model;
         })
-            ->pipe(fn(Collection $models) => new EloquentCollection($models))
-            ->when($this->pageName, fn(EloquentCollection $models) => $results->setCollection($models));
+            ->pipe(fn (Collection $models) => new EloquentCollection($models))
+            ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 
     public function makeSelects(ModelToSearchThrough $currentModel): array
@@ -360,7 +360,7 @@ class Searcher
                     }
                 }
             } else {
-                $qualifiedKeyName = 'CAST(NULL AS bigint)';
+                $qualifiedKeyName  = 'CAST(NULL AS bigint)';
                 $qualifiedOrderByColumnName = 'CAST(null AS timestamp)';
             }
 
@@ -461,7 +461,7 @@ class Searcher
         $firstQuery = $queries->shift()->toBase();
 
         // union the other queries together
-        $queries->each(fn(Builder $query) => $firstQuery->union($query));
+        $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
         if ($this->orderByModel) {
             $firstQuery->orderBy(
@@ -547,7 +547,7 @@ class Searcher
 
         $query->orWhereHas($relation, function ($relationQuery) use ($column) {
             $relationQuery->where(
-                fn($query) => $this->addWhereTermsToQuery($query, $query->qualifyColumn($column))
+                fn ($query) => $this->addWhereTermsToQuery($query, $query->qualifyColumn($column))
             );
         });
     }
